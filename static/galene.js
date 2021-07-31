@@ -2289,6 +2289,29 @@ function formatTime(time) {
 }
 
 /**
+ * @type {SpeechSynthesisVoice}
+ */
+let speechVoice = null;
+
+/**
+ * @param {string} message
+ */
+function speak(message) {
+    if(!speechVoice)
+        throw new Error('No voice selected');
+    if(!('speechSynthesis' in window))
+        throw new Error("this browser doesn't support speech synthesis")
+
+    let u = new SpeechSynthesisUtterance();
+    u.text = message;
+    u.onerror = function(e) {
+        displayError(u);
+    }
+    u.voice = speechVoice;
+    window.speechSynthesis.speak(u);
+}
+
+/**
  * @typedef {Object} lastMessage
  * @property {string} [nick]
  * @property {string} [peerId]
@@ -2323,6 +2346,9 @@ function addToChatbox(peerId, dest, nick, time, privileged, history, kind, messa
         container.classList.add('message-sender');
     if(dest)
         container.classList.add('message-private');
+
+    /** @type{string} */
+    let speechMessage = null;
 
     if(kind !== 'me') {
         let p = formatLines(message.toString().split('\n'));
@@ -2363,6 +2389,14 @@ function addToChatbox(peerId, dest, nick, time, privileged, history, kind, messa
 
         p.classList.add('message-content');
         container.appendChild(p);
+
+        if(speechVoice && !history && peerId !== serverConnection.id) {
+            if(nick && doHeader)
+                speechMessage = nick + ": " + message.toString();
+            else
+                speechMessage = message.toString();
+        }
+
         lastMessage.nick = (nick || null);
         lastMessage.peerId = peerId;
         lastMessage.dest = (dest || null);
@@ -2383,9 +2417,22 @@ function addToChatbox(peerId, dest, nick, time, privileged, history, kind, messa
         container.appendChild(user);
         container.appendChild(content);
         container.classList.add('message-me');
+
+        if(speechVoice && !history && peerId !== serverConnection.id) {
+            speechMessage = nick + " " + message.toString();
+        }
+
         lastMessage = {};
     }
     container.appendChild(footer);
+
+    if(speechMessage) {
+        try {
+            speak(speechMessage);
+        } catch(e) {
+            displayWarning(e);
+        }
+    }
 
     let box = document.getElementById('box');
     box.appendChild(row);
@@ -2569,6 +2616,90 @@ commands.replace = {
     }
 };
 
+commands.speak = {
+    description: 'enable speech synthesis',
+    f: (c, r) => {
+        if(!('speechSynthesis' in window))
+            throw new Error("this browser doesn't support speech synthesis")
+        let voices = window.speechSynthesis.getVoices();
+        if(voices.length > 0) {
+            setVoice();
+            return;
+        }
+
+        // wait for voices to be populated
+        setTimeout(function() {
+            try {
+                setVoice();
+            } catch(e) {
+                displayError(e.error || e);
+            }
+        }, 2000);
+    }
+}
+
+/**
+ * @param {Array.<SpeechSynthesisVoice>} voices
+ * @param {boolean} dfault
+ * @param {string} [lang]
+ */
+function findVoice(voices, dfault, lang) {
+    for(let i = 0; i < voices.length; i++) {
+        let v = voices[i];
+        if((!dfault || v.default) && (!lang || v.lang === lang)) {
+            return v;
+        }
+    }
+    return null;
+}
+
+function setVoice() {
+    if(!('speechSynthesis' in window))
+        throw new Error("this browser doesn't support speech synthesis")
+
+    let voices = window.speechSynthesis.getVoices();
+    if(voices.length === 0)
+        throw new Error("no speech synthesis voices found");
+
+    /** @type {SpeechSynthesisVoice} */
+    let voice = null;
+
+    // try to find a default voice for the current language
+    for(let i = 0; i < navigator.languages.length; i++) {
+        let lang = navigator.languages[i];
+        voice = findVoice(voices, true, lang);
+        if(voice)
+            break;
+    }
+
+    // try to find a default voice for any language
+    if(!voice)
+        voice = findVoice(voices, true);
+
+    // try to find a non-default voice for the current language
+    if(!voice) {
+        for(let i = 0; i < navigator.languages.length; i++) {
+            let lang = navigator.languages[i];
+            voice = findVoice(voices, false, lang);
+            if(voice)
+                break;
+        }
+    }
+
+    // oh, well
+    voice = voices[0];
+
+    speechVoice = voice;
+    displayError(`Using voice ${speechVoice.name} (${speechVoice.lang})`,
+                 'info');
+}
+
+commands.unspeak = {
+    description: 'disable speech synthesis',
+    f: (c, r) => {
+        speechVoice = null;
+    }
+}
 
 /**
  * parseCommand splits a string into two space-separated parts.  The first
