@@ -205,6 +205,7 @@ function ServerConnection() {
   * @property {string} [dest]
   * @property {string} [username]
   * @property {string} [password]
+  * @property {string} [token]
   * @property {boolean} [privileged]
   * @property {Object<string,boolean>} [permissions]
   * @property {Object<string,any>} [status]
@@ -416,16 +417,18 @@ ServerConnection.prototype.connect = async function(url) {
  *
  * @param {string} group - The name of the group to join.
  * @param {string} username - the username to join as.
- * @param {string} password - the password.
+ * @param {string} password - the password, if any.
+ * @param {string} [token] - the authorisation token, if any.
  * @param {Object<string,any>} [data] - the initial associated data.
  */
-ServerConnection.prototype.join = function(group, username, password, data) {
+        ServerConnection.prototype.join = function(group, username, password, token, data) {
     let m = {
         type: 'join',
         kind: 'join',
         group: group,
         username: username,
         password: password,
+        token: token,
     };
     if(data)
         m.data = data;

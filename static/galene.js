@@ -271,13 +271,36 @@ function setConnected(connected) {
 }
 
 /** @this {ServerConnection} */
-function gotConnected() {
+async function gotConnected() {
     username = getInputElement('username').value.trim();
     setConnected(true);
     try {
         let pw = getInputElement('password').value;
         getInputElement('password').value = '';
-        this.join(group, username, pw);
+        if(!groupStatus.authServer) {
+            this.join(group, username, pw);
+        } else {
+            let r = await fetch(groupStatus.authServer, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                    group: location.href,
+                    username: username,
+                    password: pw,
+                }),
+            });
+            if(!r.ok) {
+                displayError(
+                    `The authorisation server said: ${r.status} ${r.statusText}`,
+                )
+                serverConnection.close();
+                return
+            }
+            let token = await r.text();
+            this.join(group, username, null, token);
+        }
     } catch(e) {
         console.error(e);
         displayError(e);
