@@ -126,7 +126,7 @@
     align-items: center;
     -webkit-box-pack: justify;
     justify-content: space-between;
-    background: #039a9a;
+    background: #7ca7c7;
 }
 .navbar {
     position: relative;
@@ -282,7 +282,7 @@
 .users-header {
     height: 3.5rem;
     padding: 10px;
-    background: #039a9a;
+    background: #f8f8f8;
     font-size: 0.95rem;
     font-weight: 500;
 }
@@ -933,7 +933,7 @@ h1 {
 }
 
 .peer-active {
-    border: 2px solid #039a9a;
+    border: 2px solid #7ca7c7;
 }
 
 .media {
@@ -956,7 +956,7 @@ h1 {
 }
 
 .sidenav {
-    background-color: #4d076b;
+    background-color: #7ca7c7;
     box-shadow: 0 0 24px 0 rgba(71, 77, 86, 0.1), 0 1px 0 0 rgba(71, 77, 86, 0.08);
     display: block;
     position: fixed;
@@ -1324,7 +1324,7 @@ header .collapse {
         top: 56px;
         right: 0;
         left: 0;
-        background: #eff3f9;
+        background: #f8f8f8;
     }
 
     .login-box {
